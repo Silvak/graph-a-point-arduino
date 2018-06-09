@@ -1,100 +1,84 @@
-#include <LedControl.h> //connect 3.3v to AREF
+#include <LedControl.h> //la libreria es LedControl-master.zip
+int xPin = A1; // lee X_OUT
+int yPin = A2; // lee Y_OUT
+int  x = 0; //Almacena el xPin
+int  y = 0; //Almacena el yPin
+int gx = 0; //Almacena el resultado de la division entre x / 10
+int gy = 0; //Almacena el resultado de la division entre y / 10
+int mode = 0; //un valor a ser untilizado posteriormente para un cambio de codigo al pulsar un boton
 
-int  x = 0;
-int  y = 0;
-int gx = 0;
-int gy = 0;
-
-int mode =  0;
-int xPin = A1; 
-int yPin = A2; 
-
-int DIN = 12;
+int DIN = 12; 
 int CS =  11;
 int CLK = 10;
 
-byte  px[]=  {0x80,0x40,0x20,0x10,0x08,0x04,0x02,0x01}; 
-byte  p[8]=  {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; 
-//animation
-byte a1[8]=  {0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-byte a2[8]=  {0x08,0x08,0x00,0x00,0x00,0x00,0x00,0x00};
-byte a3[8]=  {0x08,0x08,0x08,0x00,0x00,0x00,0x00,0x00};
-byte a4[8]=  {0x00,0x08,0x08,0x08,0x00,0x00,0x00,0x00};
-byte a5[8]=  {0x00,0x00,0x08,0x08,0x08,0x00,0x00,0x00};
-byte a6[8]=  {0x00,0x00,0x00,0x08,0x08,0x08,0x00,0x00};
-byte a7[8]=  {0x00,0x00,0x00,0x18,0x18,0x08,0x00,0x00};
-byte a8[8]=  {0x00,0x00,0x00,0x38,0x18,0x08,0x00,0x00};
+byte  px[]=  {0x80,0x40,0x20,0x10,0x08,0x04,0x02,0x01}; //punto de posicion
+byte  py[8]=  {0,0,0,0,0,0,0,0}; //punto de posicion en blanco
+//Animacion inicial a0, a1 y a2
+byte a0[8]=  {0,0,0,0,0,0,0,0}; 
+byte a1[8]=  {0x00,0x00,0x00,0x18,0x18,0x08,0x00,0x00};
+byte a2[8]=  {0x00,0x00,0x00,0x38,0x18,0x08,0x00,0x00};
 
 LedControl lc=LedControl (DIN,CLK,CS,0);
 
 void setup() {
   Serial.begin(9600);
   analogReference(EXTERNAL);
-  pinMode(xPin, INPUT);
-  pinMode(yPin, INPUT);
+  pinMode(xPin, INPUT);       // establecemos xPin como variable de entrada
+  pinMode(yPin, INPUT);       // establecemos yPin como variable de entrada
   lc.shutdown(0,false);       //The MAX72XX is in power-saving mode on startup
-  lc.setIntensity(0, 5);      // Set the brightness to maximum value
-  lc.clearDisplay(0);         // and clear the display
+  lc.setIntensity(0, 5);      // Configuracion del brillo para max o min valor
+  lc.clearDisplay(0);         // Limpiador de pantalla
+  Serial.println("Wave_arduino grafica un punto en matriz 8x8 con acelerometro"); delay(100);
+  Serial.println("               Recordar leer todo por anticipado            "); delay(900);
 }
 
 void loop() {
-  x = analogRead(xPin) - 501;  //Lee el eje x
-  y = analogRead(yPin) - 510;  //Lee el eje y
-  Serial.print(analogRead(xPin)- 499);
-  Serial.print("\t");
-  Serial.print(analogRead(yPin)- 509);
-  Serial.println("\t");
-
-  if(mode == 0){
-    printByte(a1);delay(90);
-    printByte(a2);delay(90);
-    printByte(a3);delay(90);
-    printByte(a4);delay(90);
-    printByte(a5);delay(90);
-    printByte(a6);delay(300);
-    printByte(a7);delay(100);
-    printByte(a8);delay(1000);
-    mode = mode + 1;
-  }
-   
-  if(mode == 1) {
-    if(x >= -40 && x <= -31) {gx = 0;}
-    if(x >= -30 && x <= -21) {gx = 1;}
-    if(x >= -20 && x <= -11) {gx = 2;}
-    if(x >= -10 && x <= 0)   {gx = 3;}
-    if(x >= 1  &&  x <= 10)  {gx = 4;}
-    if(x >= 11 &&  x <= 20)  {gx = 5;}
-    if(x >= 21 &&  x <= 30)  {gx = 6;}
-    if(x >= 31 &&  x <= 40)  {gx = 7;}
-    if(y >= -40 && y <= -31) {gy = 0;}
-    if(y >= -30 && y <= -21) {gy = 1;}
-    if(y >= -20 && y <= -11) {gy = 2;}
-    if(y >= -10 && y <= 0)   {gy = 3;}
-    if(y >= 1  &&  y <= 10)  {gy = 4;}
-    if(y >= 11 &&  y <= 20)  {gy = 5;}
-    if(y >= 21 &&  y <= 30)  {gy = 6;}
-    if(y >= 31 &&  y <= 40)  {gy = 7;}
-  printEduc8s();
-  }
+  //Llamado a la funcion logo y comprobacion si se ha ejecutado con anterioridad
+  if(mode == 0) { Logo(); } 
+  //Llamamos a la funcion para graficar el punto en la matriz
+  if(mode == 1) { GraficaPoint(); }
 }
 
-void printEduc8s() {
-  if(gy == 0){ p[0] = px[gx]; printByte(p);} 
-    else{p[0]={0x00};}
-  if(gy == 1){ p[1] = px[gx]; printByte(p);} 
-    else{p[1]={0x00};}
-  if(gy == 2){ p[2] = px[gx]; printByte(p);} 
-    else{p[2]={0x00};}
-  if(gy == 3){ p[3] = px[gx]; printByte(p);} 
-    else{p[3]={0x00};}
-  if(gy == 4){ p[4] = px[gx]; printByte(p);} 
-    else{p[4]={0x00};} 
-  if(gy == 5){ p[5] = px[gx]; printByte(p);} 
-    else{p[5]={0x00};} 
-  if(gy == 6){ p[6] = px[gx]; printByte(p);} 
-    else{p[6]={0x00};} 
-  if(gy == 7){ p[7] = px[gx]; printByte(p);} 
-    else{p[7]={0x00};}
+void Logo(){
+  int i = 0;
+  int ib = 0; 
+  for(i=0;i<6;i++){
+    a0 [i] = 8;
+    printByte(a0);
+    delay(100);
+    if (i == 2){      
+        for(ib=0;ib<3;ib++){
+          if(ib < 3){
+            a0[ib] = 0; 
+            printByte(a0);
+            delay(100);
+            }
+        }  
+     } 
+  }
+  printByte(a1);
+    delay(120);
+  printByte(a2);
+    delay(2000);
+  mode = ++mode; //cambia el valor de modo de 0 a 1
+  }
+
+void GraficaPoint(){
+    //leemos y almacenamos la posicion en x & y  
+    x = analogRead(xPin) - 501; 
+    y = analogRead(yPin) - 510; 
+    //la dividimos entre dies para obtener enteros de menor valor
+    gx = x / 10;
+    Serial.print(gx);
+    Serial.print(":x\t y:");
+    gy = y / 10;
+    Serial.println(gy);
+    if(gy >= 0){  //definimos que gy > 0 ejecutar...
+        /*la pocicion gy definira dinamicamente el punto a graficar y, mientras que gx tomara un valor*/
+        py[gy] = px[gx]; 
+        printByte(py);
+        py[gy]={0x00};
+        }
 }
 
 void printByte(byte character [])
